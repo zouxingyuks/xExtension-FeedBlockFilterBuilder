@@ -1,1 +1,143 @@
-
+.fbfb-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: none;
+}
+.fbfb-overlay.fbfb-visible {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fbfb-modal {
+  background: Canvas;
+  color: CanvasText;
+  border-radius: 6px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  padding: 24px;
+  width: 90%;
+  max-width: 480px;
+  z-index: 9999;
+  position: relative;
+  box-sizing: border-box;
+}
+.fbfb-modal-title {
+  margin: 0 0 16px 0;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: inherit;
+}
+.fbfb-form-group {
+  margin-bottom: 12px;
+}
+.fbfb-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: inherit;
+}
+.fbfb-select,
+.fbfb-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid ButtonBorder;
+  border-radius: 4px;
+  font-size: 0.95em;
+  box-sizing: border-box;
+  background: Field;
+  color: FieldText;
+}
+.fbfb-select:focus,
+.fbfb-input:focus {
+  outline: 2px solid Highlight;
+  border-color: Highlight;
+}
+.fbfb-preview {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid ButtonBorder;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: monospace;
+  background: Field;
+  color: FieldText;
+  min-height: 32px;
+  box-sizing: border-box;
+  word-break: break-all;
+}
+.fbfb-preview:focus {
+  outline: 2px solid Highlight;
+}
+.fbfb-preview.fbfb-placeholder {
+  color: GrayText;
+  font-style: italic;
+  font-family: inherit;
+}
+.fbfb-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.fbfb-btn-submit {
+  padding: 7px 18px;
+  background: Highlight;
+  color: HighlightText;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95em;
+  cursor: pointer;
+}
+.fbfb-btn-submit:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.fbfb-btn-submit:focus {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+.fbfb-btn-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.fbfb-btn-cancel {
+  padding: 7px 18px;
+  background: transparent;
+  color: inherit;
+  border: 1px solid ButtonBorder;
+  border-radius: 4px;
+  font-size: 0.95em;
+  cursor: pointer;
+}
+.fbfb-btn-cancel:hover {
+  background: ButtonFace;
+}
+.fbfb-btn-cancel:focus {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+.fbfb-btn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+.fbfb-btn:hover {
+  opacity: 1;
+}
+.fbfb-btn:focus {
+  outline: 2px solid Highlight;
+  border-radius: 2px;
+}
+.fbfb-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}

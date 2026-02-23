@@ -234,7 +234,7 @@
     modalSubmitBtn.disabled = true;
     modalSubmitBtn.textContent = i18n.submitBtn;
     modalPreview.textContent = i18n.previewPlaceholder;
-    modalPreview.classList.add('fbfb-preview-placeholder');
+    modalPreview.classList.add('fbfb-placeholder');
 
     modalOverlay.style.display = 'block';
     modal.style.display = 'block';
@@ -256,7 +256,7 @@
     if (modalDimensionSelect) modalDimensionSelect.innerHTML = '';
     if (modalPreview) {
       modalPreview.textContent = '';
-      modalPreview.classList.remove('fbfb-preview-placeholder');
+      modalPreview.classList.remove('fbfb-placeholder');
     }
     if (modalSubmitBtn) {
       modalSubmitBtn.disabled = true;
@@ -327,13 +327,13 @@
 
     if (!expression) {
       modalPreview.textContent = i18n.previewPlaceholder;
-      modalPreview.classList.add('fbfb-preview-placeholder');
+      modalPreview.classList.add('fbfb-placeholder');
       modalSubmitBtn.disabled = true;
       return;
     }
 
     modalSubmitBtn.disabled = false;
-    modalPreview.classList.remove('fbfb-preview-placeholder');
+    modalPreview.classList.remove('fbfb-placeholder');
 
     dimension = modalDimensionSelect.value;
     if (dimension === 'custom') {

@@ -186,7 +186,7 @@
     btnGroup.className = 'fbfb-btn-group';
 
     modalSubmitBtn = document.createElement('button');
-    modalSubmitBtn.className = 'fbfb-btn fbfb-btn-submit';
+    modalSubmitBtn.className = 'fbfb-btn-submit';
     modalSubmitBtn.textContent = i18n.submitBtn;
     modalSubmitBtn.disabled = true;
     modalSubmitBtn.addEventListener('click', onSubmitClick);
@@ -236,7 +236,7 @@
     modalPreview.textContent = i18n.previewPlaceholder;
     modalPreview.classList.add('fbfb-placeholder');
 
-    modalOverlay.style.display = 'block';
+    modalOverlay.classList.add('fbfb-visible');
     modal.style.display = 'block';
 
     if (modalDimensionSelect.options.length > 0) {
@@ -247,7 +247,7 @@
   }
 
   function closeModal() {
-    if (modalOverlay) modalOverlay.style.display = 'none';
+    if (modalOverlay) modalOverlay.classList.remove('fbfb-visible');
     if (modal) modal.style.display = 'none';
     modalCurrentFlux = null;
     modalCurrentFeedId = null;

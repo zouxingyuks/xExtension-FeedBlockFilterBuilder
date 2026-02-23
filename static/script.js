@@ -376,12 +376,165 @@
     }
   }
 
+  var isRuleSubmitting = false;
+
+  /**
+   * Build the feed edit page URL for a given feed ID.
+   * @param {string} feedId
+   * @returns {string}
+   */
+  function buildFeedEditUrl(feedId) {
+    return '?c=subscription&a=feed&id=' + encodeURIComponent(feedId);
+  }
+
+  /**
+   * Serialize all form fields from a form element into a URLSearchParams object.
+   * Handles: text/hidden/textarea, checkbox (only checked), radio (only checked),
+   * select (selected option), repeated names (arrays).
+   * @param {HTMLFormElement} form
+   * @returns {URLSearchParams}
+   */
+  function serializeForm(form) {
+    var params = new URLSearchParams();
+    var elements = form.elements;
+    var i, el, name, options, j, opt;
+    for (i = 0; i < elements.length; i++) {
+      el = elements[i];
+      name = el.name;
+      if (!name || el.disabled) continue;
+      switch (el.type) {
+        case 'checkbox':
+        case 'radio':
+          if (el.checked) params.append(name, el.value);
+          break;
+        case 'select-one':
+          params.append(name, el.value);
+          break;
+        case 'select-multiple':
+          options = el.options;
+          for (j = 0; j < options.length; j++) {
+            opt = options[j];
+            if (opt.selected) params.append(name, opt.value);
+          }
+          break;
+        case 'submit':
+        case 'button':
+        case 'image':
+        case 'reset':
+        case 'file':
+          break;
+        default:
+          params.append(name, el.value);
+      }
+    }
+    return params;
+  }
+
+  /**
+   * Extract CSRF token from parsed HTML document.
+   * @param {Document} doc
+   * @returns {string|null}
+   */
+  function extractCsrfFromDoc(doc) {
+    var el = doc.querySelector('input[name="_csrf"]');
+    return el ? el.value : null;
+  }
+
+  /**
+   * Submit a new filter rule for the given feed.
+   * @param {string} feedId
+   * @param {string} ruleText
+   */
+  function submitRule(feedId, ruleText) {
+    var url, csrf, FBF;
+    if (isRuleSubmitting) return;
+    isRuleSubmitting = true;
+    FBF = window.FeedBlockFilterBuilder;
+    FBF.setSubmitting(true);
+
+    url = buildFeedEditUrl(feedId);
+    csrf = (window.context && window.context.csrf) ? window.context.csrf : null;
+
+    fetch(url, { credentials: 'same-origin' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('fetch_failed');
+        return res.text();
+      })
+      .then(function (html) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, 'text/html');
+        var form = doc.querySelector('form[action*="subscription"]') ||
+                   doc.querySelector('form');
+        var filterField, existingRules, lines, params, csrfFromDoc;
+
+        if (!form) throw new Error('form_not_found');
+        filterField = form.querySelector('[name="filteractions_read"]');
+        if (!filterField) throw new Error('filter_field_not_found');
+
+        existingRules = filterField.value.trim();
+        lines = existingRules ? existingRules.split('\n') : [];
+
+        var k, trimmed;
+        for (k = 0; k < lines.length; k++) {
+          trimmed = lines[k].trim();
+          if (trimmed === ruleText.trim()) {
+            isRuleSubmitting = false;
+            FBF.setSubmitting(false);
+            showNotification(i18n.errorDuplicate, 'bad');
+            return;
+          }
+        }
+
+        lines.push(ruleText.trim());
+        filterField.value = lines.join('\n');
+
+        params = serializeForm(form);
+
+        csrfFromDoc = extractCsrfFromDoc(doc);
+        if (!csrf) csrf = csrfFromDoc;
+        if (csrf) {
+          params.set('_csrf', csrf);
+        }
+
+        return fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+          redirect: 'follow'
+        });
+      })
+      .then(function (res) {
+        if (!res) return;
+        isRuleSubmitting = false;
+        FBF.setSubmitting(false);
+        if (res.redirected && res.status === 200) {
+          FBF.closeModal();
+          showNotification(i18n.successNotification, 'good');
+        } else {
+          showNotification(i18n.errorSubmit, 'bad');
+        }
+      })
+      .catch(function (err) {
+        isRuleSubmitting = false;
+        FBF.setSubmitting(false);
+        if (err && err.message === 'filter_field_not_found') {
+          showNotification(i18n.errorFilterField, 'bad');
+        } else if (err && err.message === 'form_not_found') {
+          showNotification(i18n.errorFormNotFound, 'bad');
+        } else {
+          showNotification(i18n.errorNetwork, 'bad');
+        }
+      });
+  }
+
   window.FeedBlockFilterBuilder = window.FeedBlockFilterBuilder || {};
   window.FeedBlockFilterBuilder.showNotification = showNotification;
   window.FeedBlockFilterBuilder.extractFeedId = extractFeedId;
   window.FeedBlockFilterBuilder.i18n = function () { return i18n; };
   window.FeedBlockFilterBuilder.openModal = openModal;
   window.FeedBlockFilterBuilder.closeModal = closeModal;
+  window.FeedBlockFilterBuilder.submitRule = submitRule;
   window.FeedBlockFilterBuilder.setSubmitting = function (submitting) {
     if (!modalSubmitBtn) return;
     isSubmitting = submitting;

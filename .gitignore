@@ -1,0 +1,5 @@
+.idea/
+.claude/
+openspec/changes/*/archive/
+*.swp
+.DS_Store

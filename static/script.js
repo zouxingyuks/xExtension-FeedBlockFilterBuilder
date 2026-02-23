@@ -2,7 +2,7 @@
 
 (function () {
   /** @type {object} */
-  var i18n = {};
+  var i18n = null;
 
   var ICON_SVG = '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>';
 
@@ -10,14 +10,14 @@
 
   /** @param {HTMLElement} flux */
   function injectButton(flux) {
-    var toolbar = flux.querySelector('.flux_header .item.bar');
-    if (!toolbar) return;
-    if (toolbar.querySelector('.' + BUTTON_MARKER)) return;
+    var header = flux.querySelector('.flux_header');
+    if (!header) return;
+    if (header.querySelector('.' + BUTTON_MARKER)) return;
 
     var btn = document.createElement('a');
     btn.className = BUTTON_MARKER;
     btn.href = '#';
-    btn.title = i18n.buttonTooltip;
+    btn.title = (i18n && i18n.buttonTooltip) || 'Add filter';
     btn.setAttribute('aria-label', btn.title);
     btn.innerHTML = ICON_SVG;
 
@@ -27,7 +27,17 @@
       onFilterButtonClick(flux);
     });
 
-    toolbar.appendChild(btn);
+    var li = document.createElement('li');
+    li.className = 'item manage';
+    li.appendChild(btn);
+
+    var manageItems = header.querySelectorAll('.item.manage');
+    var anchor = manageItems.length >= 2 ? manageItems[1] : manageItems[0];
+    if (anchor && anchor.nextSibling) {
+      header.insertBefore(li, anchor.nextSibling);
+    } else {
+      header.insertBefore(li, header.firstChild);
+    }
   }
 
   function injectAllButtons() {
@@ -68,15 +78,17 @@
   /** @param {HTMLElement} flux */
   function onFilterButtonClick(flux) {
     var feedId = extractFeedId(flux);
+    var triggerBtn;
     if (!feedId) {
-      showNotification(i18n.errorNoFeedId, 'bad');
+      showNotification((i18n && i18n.errorNoFeedId) || 'Cannot get feed ID', 'bad');
       return;
     }
     if (typeof window.FeedBlockFilterBuilder !== 'undefined' &&
         typeof window.FeedBlockFilterBuilder.openModal === 'function') {
-      window.FeedBlockFilterBuilder.openModal(flux, feedId);
+      triggerBtn = flux.querySelector('.' + BUTTON_MARKER + ' a, .' + BUTTON_MARKER);
+      window.FeedBlockFilterBuilder.openModal(flux, feedId, triggerBtn);
     } else {
-      showNotification(i18n.errorNotReady, 'bad');
+      showNotification((i18n && i18n.errorNotReady) || 'Extension not ready', 'bad');
     }
   }
 
@@ -122,14 +134,24 @@
     }, 4000);
   }
 
-  function init() {
-    if (window.context &&
-        window.context.extensions &&
-        window.context.extensions.feedBlockFilterBuilder &&
-        window.context.extensions.feedBlockFilterBuilder.i18n) {
-      i18n = window.context.extensions.feedBlockFilterBuilder.i18n;
+  function getI18n() {
+    var ext, data;
+    if (!i18n || Object.keys(i18n).length === 0) {
+      ext = window.context &&
+            window.context.extensions &&
+            window.context.extensions.feedBlockFilterBuilder;
+      data = (ext && ext.i18n) ? ext.i18n : null;
+      if (data && Object.keys(data).length > 0) {
+        i18n = data;
+      } else {
+        i18n = i18n || {};
+      }
     }
+    return i18n;
+  }
 
+  function init() {
+    getI18n();
     createModal();
     injectAllButtons();
     observeNewArticles();
@@ -137,6 +159,11 @@
 
   var modal = null;
   var modalOverlay = null;
+  var modalTitleEl = null;
+  var modalDimensionLabelEl = null;
+  var modalExpressionLabelEl = null;
+  var modalPreviewLabelEl = null;
+  var modalCancelBtn = null;
   var modalDimensionSelect = null;
   var modalExpressionInput = null;
   var modalPreview = null;
@@ -153,31 +180,26 @@
     modal = document.createElement('div');
     modal.className = 'fbfb-modal';
 
-    var title = document.createElement('h3');
-    title.className = 'fbfb-modal-title';
-    title.textContent = i18n.modalTitle;
+    modalTitleEl = document.createElement('h3');
+    modalTitleEl.className = 'fbfb-modal-title';
 
-    var dimensionLabel = document.createElement('label');
-    dimensionLabel.className = 'fbfb-label';
-    dimensionLabel.textContent = i18n.dimensionLabel;
+    modalDimensionLabelEl = document.createElement('label');
+    modalDimensionLabelEl.className = 'fbfb-label';
 
     modalDimensionSelect = document.createElement('select');
     modalDimensionSelect.className = 'fbfb-select';
     modalDimensionSelect.addEventListener('change', onDimensionChange);
 
-    var expressionLabel = document.createElement('label');
-    expressionLabel.className = 'fbfb-label';
-    expressionLabel.textContent = i18n.expressionLabel;
+    modalExpressionLabelEl = document.createElement('label');
+    modalExpressionLabelEl.className = 'fbfb-label';
 
     modalExpressionInput = document.createElement('input');
     modalExpressionInput.type = 'text';
     modalExpressionInput.className = 'fbfb-input';
-    modalExpressionInput.placeholder = i18n.expressionPlaceholder;
     modalExpressionInput.addEventListener('input', updatePreview);
 
-    var previewLabel = document.createElement('label');
-    previewLabel.className = 'fbfb-label';
-    previewLabel.textContent = i18n.previewLabel;
+    modalPreviewLabelEl = document.createElement('label');
+    modalPreviewLabelEl.className = 'fbfb-label';
 
     modalPreview = document.createElement('div');
     modalPreview.className = 'fbfb-preview';
@@ -187,24 +209,22 @@
 
     modalSubmitBtn = document.createElement('button');
     modalSubmitBtn.className = 'fbfb-btn-submit';
-    modalSubmitBtn.textContent = i18n.submitBtn;
     modalSubmitBtn.disabled = true;
     modalSubmitBtn.addEventListener('click', onSubmitClick);
 
-    var cancelBtn = document.createElement('button');
-    cancelBtn.className = 'fbfb-btn fbfb-btn-cancel';
-    cancelBtn.textContent = i18n.cancelBtn;
-    cancelBtn.addEventListener('click', closeModal);
+    modalCancelBtn = document.createElement('button');
+    modalCancelBtn.className = 'fbfb-btn fbfb-btn-cancel';
+    modalCancelBtn.addEventListener('click', closeModal);
 
     btnGroup.appendChild(modalSubmitBtn);
-    btnGroup.appendChild(cancelBtn);
+    btnGroup.appendChild(modalCancelBtn);
 
-    modal.appendChild(title);
-    modal.appendChild(dimensionLabel);
+    modal.appendChild(modalTitleEl);
+    modal.appendChild(modalDimensionLabelEl);
     modal.appendChild(modalDimensionSelect);
-    modal.appendChild(expressionLabel);
+    modal.appendChild(modalExpressionLabelEl);
     modal.appendChild(modalExpressionInput);
-    modal.appendChild(previewLabel);
+    modal.appendChild(modalPreviewLabelEl);
     modal.appendChild(modalPreview);
     modal.appendChild(btnGroup);
 
@@ -212,32 +232,62 @@
     document.body.appendChild(modal);
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && modal && modal.style.display === 'block') {
+      if (e.key === 'Escape' && modal && modal.classList.contains('fbfb-visible')) {
         closeModal();
       }
     });
   }
 
+  function refreshModalLabels() {
+    var t = getI18n();
+    if (modalTitleEl) modalTitleEl.textContent = t.modalTitle || 'Create Filter Rule';
+    if (modalDimensionLabelEl) modalDimensionLabelEl.textContent = t.dimensionLabel || 'Dimension';
+    if (modalExpressionLabelEl) modalExpressionLabelEl.textContent = t.expressionLabel || 'Expression';
+    if (modalPreviewLabelEl) modalPreviewLabelEl.textContent = t.previewLabel || 'Preview';
+    if (modalExpressionInput) modalExpressionInput.placeholder = t.expressionPlaceholder || '';
+    if (modalSubmitBtn) modalSubmitBtn.textContent = t.submitBtn || 'Add';
+    if (modalCancelBtn) modalCancelBtn.textContent = t.cancelBtn || 'Cancel';
+  }
+
   /**
    * @param {HTMLElement} flux
    * @param {string} feedId
+   * @param {HTMLElement} triggerEl
    */
-  function openModal(flux, feedId) {
+  function openModal(flux, feedId, triggerEl) {
+    var rect, modalWidth, left, top;
     modalCurrentFlux = flux;
     modalCurrentFeedId = feedId;
     isSubmitting = false;
+
+    refreshModalLabels();
 
     var metadata = extractMetadata(flux);
     populateDimensions(metadata);
 
     modalExpressionInput.value = '';
     modalSubmitBtn.disabled = true;
-    modalSubmitBtn.textContent = i18n.submitBtn;
-    modalPreview.textContent = i18n.previewPlaceholder;
+    var t = getI18n();
+    modalPreview.textContent = t.previewPlaceholder || '';
     modalPreview.classList.add('fbfb-placeholder');
 
-    modalOverlay.classList.add('fbfb-visible');
-    modal.style.display = 'block';
+    if (triggerEl) {
+      rect = triggerEl.getBoundingClientRect();
+      modalWidth = 320;
+      left = rect.right + 8;
+      if (left + modalWidth > window.innerWidth - 8) {
+        left = rect.left - modalWidth - 8;
+      }
+      if (left < 8) left = 8;
+      top = rect.top;
+      if (top + 300 > window.innerHeight - 8) {
+        top = window.innerHeight - 308;
+      }
+      if (top < 8) top = 8;
+      modal.style.left = left + 'px';
+      modal.style.top = top + 'px';
+    }
+    modal.classList.add('fbfb-visible');
 
     if (modalDimensionSelect.options.length > 0) {
       onDimensionChange();
@@ -248,7 +298,7 @@
 
   function closeModal() {
     if (modalOverlay) modalOverlay.classList.remove('fbfb-visible');
-    if (modal) modal.style.display = 'none';
+    if (modal) modal.classList.remove('fbfb-visible');
     modalCurrentFlux = null;
     modalCurrentFeedId = null;
     isSubmitting = false;
@@ -260,7 +310,6 @@
     }
     if (modalSubmitBtn) {
       modalSubmitBtn.disabled = true;
-      modalSubmitBtn.textContent = i18n.submitBtn;
     }
   }
 
@@ -289,14 +338,15 @@
   /** @param {{ title: string, author: string, feedName: string }} metadata */
   function populateDimensions(metadata) {
     modalDimensionSelect.innerHTML = '';
+    var t = getI18n();
 
     if (metadata.title) {
-      addOption('intitle', i18n.dimensionTitle, metadata.title);
+      addOption('intitle', t.dimensionTitle || 'Title', metadata.title);
     }
     if (metadata.author) {
-      addOption('author', i18n.dimensionAuthor, metadata.author);
+      addOption('author', t.dimensionAuthor || 'Author', metadata.author);
     }
-    addOption('custom', i18n.dimensionCustom, '');
+    addOption('custom', t.dimensionCustom || 'Custom', '');
   }
 
   /**
@@ -324,9 +374,10 @@
     if (isSubmitting) return;
     var expression = modalExpressionInput.value.trim();
     var dimension, ruleText;
+    var t = getI18n();
 
     if (!expression) {
-      modalPreview.textContent = i18n.previewPlaceholder;
+      modalPreview.textContent = t.previewPlaceholder || '';
       modalPreview.classList.add('fbfb-placeholder');
       modalSubmitBtn.disabled = true;
       return;
@@ -359,7 +410,7 @@
 
   function onSubmitClick() {
     var expression = modalExpressionInput.value.trim();
-    var dimension, ruleText;
+    var dimension, ruleText, t;
     if (!expression) return;
 
     dimension = modalDimensionSelect.value;
@@ -372,14 +423,14 @@
     if (typeof window.FeedBlockFilterBuilder.submitRule === 'function') {
       window.FeedBlockFilterBuilder.submitRule(modalCurrentFeedId, ruleText);
     } else {
-      showNotification(i18n.errorNotReady, 'bad');
+      t = getI18n();
+      showNotification(t.errorNotReady || 'Extension not ready', 'bad');
     }
   }
 
   var isRuleSubmitting = false;
 
   /**
-   * Build the feed edit page URL for a given feed ID.
    * @param {string} feedId
    * @returns {string}
    */
@@ -388,9 +439,6 @@
   }
 
   /**
-   * Serialize all form fields from a form element into a URLSearchParams object.
-   * Handles: text/hidden/textarea, checkbox (only checked), radio (only checked),
-   * select (selected option), repeated names (arrays).
    * @param {HTMLFormElement} form
    * @returns {URLSearchParams}
    */
@@ -431,7 +479,6 @@
   }
 
   /**
-   * Extract CSRF token from parsed HTML document.
    * @param {Document} doc
    * @returns {string|null}
    */
@@ -441,12 +488,12 @@
   }
 
   /**
-   * Submit a new filter rule for the given feed.
    * @param {string} feedId
    * @param {string} ruleText
    */
   function submitRule(feedId, ruleText) {
     var url, csrf, FBF;
+    var t = getI18n();
     if (isRuleSubmitting) return;
     isRuleSubmitting = true;
     FBF = window.FeedBlockFilterBuilder;
@@ -480,7 +527,7 @@
           if (trimmed === ruleText.trim()) {
             isRuleSubmitting = false;
             FBF.setSubmitting(false);
-            showNotification(i18n.errorDuplicate, 'bad');
+            showNotification(t.errorDuplicate || 'Rule already exists', 'bad');
             return;
           }
         }
@@ -510,20 +557,20 @@
         FBF.setSubmitting(false);
         if (res.redirected && res.status === 200) {
           FBF.closeModal();
-          showNotification(i18n.successNotification, 'good');
+          showNotification(t.successNotification || 'Rule added', 'good');
         } else {
-          showNotification(i18n.errorSubmit, 'bad');
+          showNotification(t.errorSubmit || 'Submit failed', 'bad');
         }
       })
       .catch(function (err) {
         isRuleSubmitting = false;
         FBF.setSubmitting(false);
         if (err && err.message === 'filter_field_not_found') {
-          showNotification(i18n.errorFilterField, 'bad');
+          showNotification(t.errorFilterField || 'Filter field not found', 'bad');
         } else if (err && err.message === 'form_not_found') {
-          showNotification(i18n.errorFormNotFound, 'bad');
+          showNotification(t.errorFormNotFound || 'Form not found', 'bad');
         } else {
-          showNotification(i18n.errorNetwork, 'bad');
+          showNotification(t.errorNetwork || 'Network error', 'bad');
         }
       });
   }
@@ -539,8 +586,13 @@
     if (!modalSubmitBtn) return;
     isSubmitting = submitting;
     modalSubmitBtn.disabled = submitting;
-    modalSubmitBtn.textContent = submitting ? i18n.submitting : i18n.submitBtn;
+    var t = getI18n();
+    modalSubmitBtn.textContent = submitting ? (t.submitting || '...') : (t.submitBtn || 'Add');
   };
 
-  document.addEventListener('freshrss:globalContextLoaded', init);
+  if (window.context) {
+    init();
+  } else {
+    document.addEventListener('freshrss:globalContextLoaded', init);
+  }
 })();

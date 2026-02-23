@@ -213,7 +213,7 @@
     modalSubmitBtn.addEventListener('click', onSubmitClick);
 
     modalCancelBtn = document.createElement('button');
-    modalCancelBtn.className = 'fbfb-btn fbfb-btn-cancel';
+    modalCancelBtn.className = 'fbfb-btn-cancel';
     modalCancelBtn.addEventListener('click', closeModal);
 
     btnGroup.appendChild(modalSubmitBtn);

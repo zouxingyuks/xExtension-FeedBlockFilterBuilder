@@ -23,7 +23,7 @@ return [
 			'errorFormNotFound' => '解析订阅源配置页面失败',
 			'errorNetwork' => '网络请求失败',
 			'errorDuplicate' => '该规则已存在',
-			'errorNotReady' => '扩展未就绪，请重试',
+			'errorNotReady' => '扩展尚未就绪，请稍后重试',
 		],
 	],
 ];

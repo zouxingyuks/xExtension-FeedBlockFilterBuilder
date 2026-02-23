@@ -1,7 +1,7 @@
 {
 	"name": "FeedBlockFilterBuilder",
 	"entrypoint": "FeedBlockFilterBuilder",
-	"author": "xExtension-FeedBlockFilterBuilder",
+	"author": "xyzou",
 	"description": "Quick filter rule builder for blocking feeds while reading articles",
 	"version": "0.1.0",
 	"type": "user",

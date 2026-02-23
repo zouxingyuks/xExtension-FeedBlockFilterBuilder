@@ -1,3 +1,7 @@
+## Purpose
+
+在文章阅读界面的工具栏中注入「屏蔽过滤」按钮，作为快速构建过滤规则的入口。
+
 ## ADDED Requirements
 
 ### Requirement: 工具栏按钮注入

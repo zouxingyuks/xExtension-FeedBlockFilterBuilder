@@ -1,3 +1,7 @@
+## Purpose
+
+提供模态弹窗 UI，让用户从当前文章元数据快速构建 FreshRSS 原生过滤规则表达式。
+
 ## ADDED Requirements
 
 ### Requirement: Modal 弹窗展示

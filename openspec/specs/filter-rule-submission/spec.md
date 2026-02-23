@@ -1,5 +1,8 @@
-## ADDED Requirements
+# filter-rule-submission Specification
 
+## Purpose
+TBD - created by archiving change feed-block-filter-builder-mvp. Update Purpose after archive.
+## Requirements
 ### Requirement: 获取已有过滤规则
 提交前系统 SHALL 获取当前 feed 的已有 `filteractions_read` 内容，确保追加而非覆盖。
 
@@ -81,3 +84,4 @@
 - **THEN** POST 请求 MUST 包含从 GET 响应中解析的所有表单字段原始值
 - **AND** 除 `filteractions_read` 外的所有字段值 MUST 与原始值完全一致
 - **AND** feed 的名称、URL、分类、更新频率等配置 MUST NOT 被意外修改
+
